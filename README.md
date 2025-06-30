@@ -1,7 +1,6 @@
 
 # ALUNOS: Pedro Reis, André Nacamura
 
-E acessar o localhost http://localhost:5173/
 ![alt text](image.png)
 
 # Simulador de Processador MIPS em React
@@ -112,4 +111,70 @@ main:
 
   # Finaliza
   li $v0, 10
-  syscall```
+  syscall
+
+
+  ```mips
+
+  # Realiza um cálculo simples e usa slt para comparar o resultado.
+
+.data
+msg_maior: .asciiz "O resultado eh maior que 50."
+msg_menor: .asciiz "O resultado eh menor ou igual a 50."
+
+.text
+main:
+  li $t0, 25
+  li $t1, 30
+  add $s0, $t0, $t1   # s0 = 25 + 30 = 55
+
+  slti $t2, $s0, 51   # t2 = (55 < 51) ? 1 : 0.  t2 será 0.
+
+  # A lógica aqui seria: beq $t2, $zero, maior
+  # Como não temos branches, o fluxo seguirá sequencialmente.
+  # Para um teste real, você pode alterar o valor em slti para ver a mudança em $t2.
+  
+  la $a0, msg_maior
+  li $v0, 4
+  syscall
+
+  # Finaliza o programa
+  li $v0, 10
+  syscall
+
+
+  ```mips
+
+  # Salva um valor na memória e o carrega de volta para outro registrador.
+
+.data
+mem_local: .space 4  # Reserva 4 bytes (espaço para uma word)
+msg:       .asciiz "Valor salvo e recarregado da memoria: "
+
+.text
+main:
+  # Carrega o endereço da nossa variável de memória
+  la $s0, mem_local
+
+  # Armazena o valor 1234 na memória
+  li $t0, 1234
+  sw $t0, 0($s0)
+
+  # Limpa t0 para provar que o valor será lido da memória
+  li $t0, 0
+
+  # Carrega o valor da memória em t1
+  lw $t1, 0($s0)
+
+  # Imprime a mensagem e o valor lido
+  la $a0, msg
+  li $v0, 4
+  syscall
+
+  move $a0, $t1
+  li $v0, 1
+  syscall
+
+  # Fim
+  li $v0, 10
+  syscall

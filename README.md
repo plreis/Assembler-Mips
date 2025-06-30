@@ -40,7 +40,7 @@ Para executar o simulador em sua máquina local, siga os passos abaixo.
 1.  **Clone o Repositório**
     ```bash
     git clone https://github.com/plreis/Assembler-Mips
-    cd seu-repositorio
+    cd Assembler-Mips
     ```
 
 2.  **Instale as Dependências**

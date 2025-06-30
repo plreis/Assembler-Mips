@@ -7,7 +7,6 @@ const registerMap = {
   $s0: 16, $s1: 17, $s2: 18, $s3: 19, $s4: 20, $s5: 21, $s6: 22, $s7: 23,
   $t8: 24, $t9: 25, $k0: 26, $k1: 27, $gp: 28, $sp: 29, $fp: 30, $ra: 31,
 };
-
 const registerNames = Object.keys(registerMap);
 
 // Função auxiliar para conversão para binário com preenchimento
@@ -19,14 +18,45 @@ function toBinary(num, length) {
   return bin.slice(-length);
 }
 
+// --- FORMATAR O BINÁRIO DE ACORDO COM O FORMATO MIPS ---
+const R_TYPE_MNEMONICS = ['add', 'sub', 'mult', 'and', 'or', 'sll', 'slt', 'syscall'];
+const I_TYPE_MNEMONICS = ['addi', 'slti', 'lw', 'sw', 'lui'];
+
+function formatBinary(binary, mnemonic) {
+  if (binary.length !== 32) return binary; // Retorna se não for uma instrução completa
+
+  // Formato R: op(6) rs(5) rt(5) rd(5) shamt(5) funct(6)
+  if (R_TYPE_MNEMONICS.includes(mnemonic)) {
+    const op = binary.slice(0, 6);
+    const rs = binary.slice(6, 11);
+    const rt = binary.slice(11, 16);
+    const rd = binary.slice(16, 21);
+    const shamt = binary.slice(21, 26);
+    const funct = binary.slice(26, 32);
+    return `${op} ${rs} ${rt} ${rd} ${shamt} ${funct}`;
+  }
+  
+  // Formato I: op(6) rs(5) rt(5) immediate(16)
+  if (I_TYPE_MNEMONICS.includes(mnemonic)) {
+    const op = binary.slice(0, 6);
+    const rs = binary.slice(6, 11);
+    const rt = binary.slice(11, 16);
+    const imm = binary.slice(16, 32);
+    return `${op} ${rs} ${rt} ${imm}`;
+  }
+
+  // Caso não encontre um formato (não deve acontecer), retorna o binário sem formatação.
+  return binary;
+}
+
+
 // Estado inicial dos registradores
 const initialRegisters = () => {
   const regs = {};
   registerNames.forEach(name => {
     regs[name] = 0;
   });
-  // Stack Pointer começa no "final" da memória simulada
-  regs['$sp'] = 4096;
+  regs['$sp'] = 4096; // Stack Pointer
   return regs;
 };
 
@@ -46,7 +76,7 @@ export const HomePage = () => {
     if (status === 'Rodando') {
       const timer = setTimeout(() => {
         handleStep();
-      }, 200); // Executa a cada 200ms
+      }, 200);
       return () => clearTimeout(timer);
     }
   }, [status, pc]);
@@ -60,17 +90,16 @@ export const HomePage = () => {
     lines.forEach((line, index) => {
       if (!line || line.startsWith('#')) return;
 
-      // Substituir pseudo-instruções
       let processedLine = line;
       if (line.startsWith('li')) {
-        const [_, rt, imm] = line.replace(/,/g, '').split(/\s+/);
+        const [_, rt, imm] = line.replace(/,/g, ' ').split(/\s+/);
         processedLine = `addi ${rt}, $zero, ${imm}`;
       } else if (line.startsWith('move')) {
-        const [_, rd, rs] = line.replace(/,/g, '').split(/\s+/);
+        const [_, rd, rs] = line.replace(/,/g, ' ').split(/\s+/);
         processedLine = `add ${rd}, ${rs}, $zero`;
       }
       
-      const tokens = processedLine.replace(/,/g, '').split(/\s+/).filter(Boolean);
+      const tokens = processedLine.replace(/,/g, ' ').split(/\s+/).filter(Boolean);
       const mnemonic = tokens[0];
       const args = tokens.slice(1);
 
@@ -106,36 +135,31 @@ export const HomePage = () => {
     const opcode = opcodeMap[mnemonic];
     if (opcode === undefined) throw new Error(`Instrução '${mnemonic}' não suportada.`);
 
-    // R-Type: add, sub, mult, and, or, sll, slt, syscall
     if (opcode === '000000') {
       const funct = functMap[mnemonic];
       let rd = '00000', rs = '00000', rt = '00000', shamt = '00000';
-
-      if (['add', 'sub', 'and', 'or', 'slt'].includes(mnemonic)) { // rd, rs, rt
+      if (['add', 'sub', 'and', 'or', 'slt'].includes(mnemonic)) {
         rd = toBinary(registerMap[args[0]], 5);
         rs = toBinary(registerMap[args[1]], 5);
         rt = toBinary(registerMap[args[2]], 5);
-      } else if (['mult'].includes(mnemonic)) { // rs, rt
+      } else if (['mult'].includes(mnemonic)) {
         rs = toBinary(registerMap[args[0]], 5);
         rt = toBinary(registerMap[args[1]], 5);
-      } else if (['sll'].includes(mnemonic)) { // rd, rt, shamt
+      } else if (['sll'].includes(mnemonic)) {
         rd = toBinary(registerMap[args[0]], 5);
         rt = toBinary(registerMap[args[1]], 5);
         shamt = toBinary(parseInt(args[2]), 5);
-      } else if (mnemonic === 'syscall') {
-        // syscall não tem operandos na sua forma binária principal
       }
       return `${opcode}${rs}${rt}${rd}${shamt}${funct}`;
     }
 
-    // I-Type: addi, lw, sw, lui, slti
-    if (['addi', 'slti'].includes(mnemonic)) { // rt, rs, imm
+    if (['addi', 'slti'].includes(mnemonic)) {
       const rt = toBinary(registerMap[args[0]], 5);
       const rs = toBinary(registerMap[args[1]], 5);
       const imm = toBinary(parseInt(args[2]), 16);
       return `${opcode}${rs}${rt}${imm}`;
     }
-    if (['lw', 'sw'].includes(mnemonic)) { // rt, offset(rs)
+    if (['lw', 'sw'].includes(mnemonic)) {
       const rt = toBinary(registerMap[args[0]], 5);
       const match = args[1].match(/(-?\d+)\((\$\w+)\)/);
       if (!match) throw new Error('Formato inválido para lw/sw. Use: offset($rs)');
@@ -143,7 +167,7 @@ export const HomePage = () => {
       const rs = toBinary(registerMap[match[2]], 5);
       return `${opcode}${rs}${rt}${imm}`;
     }
-    if (mnemonic === 'lui') { // rt, imm
+    if (mnemonic === 'lui') {
       const rt = toBinary(registerMap[args[0]], 5);
       const rs = '00000';
       const imm = toBinary(parseInt(args[1]), 16);
@@ -169,7 +193,7 @@ export const HomePage = () => {
     try {
       const { mnemonic, args } = instr;
       const getReg = (regName) => newRegs[regName];
-      const setReg = (regName, value) => { if (regName !== '$zero') newRegs[regName] = value | 0; }; // |0 para garantir 32bit int
+      const setReg = (regName, value) => { if (regName !== '$zero') newRegs[regName] = value | 0; };
 
       switch (mnemonic) {
         case 'add': setReg(args[0], getReg(args[1]) + getReg(args[2])); break;
@@ -177,8 +201,6 @@ export const HomePage = () => {
         case 'sub': setReg(args[0], getReg(args[1]) - getReg(args[2])); break;
         case 'mult': {
           const result = BigInt(getReg(args[0])) * BigInt(getReg(args[1]));
-          // MIPS mult armazena em registradores especiais HI e LO, não simulados aqui.
-          // Por simplicidade, vamos ignorar HI/LO e não alterar registradores de propósito geral.
           newOut.push(`[MULT: ${args[0]} * ${args[1]} = ${result}. Resultado em HI/LO não simulado]`);
           break;
         }
@@ -202,18 +224,12 @@ export const HomePage = () => {
         }
         case 'syscall': {
           const service = getReg('$v0');
-          if (service === 1) { // Imprimir Inteiro
-            newOut.push(getReg('$a0').toString());
-          } else if (service === 4) { // Imprimir String (não implementado)
-            newOut.push("[Syscall 4: Imprimir String não implementado]");
-          } else if (service === 10) { // Sair
-            nextPc = instructions.length; // Pula para o fim
-            setStatus('Finalizado');
-          }
+          if (service === 1) { newOut.push(getReg('$a0').toString()); }
+          else if (service === 4) { newOut.push("[Syscall 4: Imprimir String não implementado]"); }
+          else if (service === 10) { nextPc = instructions.length; setStatus('Finalizado'); }
           break;
         }
-        default:
-          throw new Error(`Execução da instrução '${mnemonic}' não implementada.`);
+        default: throw new Error(`Execução da instrução '${mnemonic}' não implementada.`);
       }
     } catch (e) {
       alert(`Erro de execução na linha ${pc + 1}: ${e.message}`);
@@ -231,18 +247,8 @@ export const HomePage = () => {
     }
   };
 
-  const handleRun = () => {
-    if (status === 'Pronto' || status === 'Pausado') {
-      setStatus('Rodando');
-    }
-  };
-  
-  const handlePause = () => {
-    if (status === 'Rodando') {
-      setStatus('Pausado');
-    }
-  };
-
+  const handleRun = () => { if (status === 'Pronto' || status === 'Pausado') setStatus('Rodando'); };
+  const handlePause = () => { if (status === 'Rodando') setStatus('Pausado'); };
   const handleReset = () => {
     setInstructions([]);
     setRegisters(initialRegisters());
@@ -312,7 +318,8 @@ export const HomePage = () => {
             {instructions.map((instr, index) => (
               <li key={index} className={index === pc ? 'current-instruction' : ''}>
                 <span className="instr-text">{instr.text}</span>
-                <span className="instr-binary">{instr.binary.match(/.{1,4}/g).join(' ')}</span>
+                {/* --- LINHA ATUALIZADA NO JSX PARA USAR A NOVA FUNÇÃO DE FORMATAÇÃO --- */}
+                <span className="instr-binary">{formatBinary(instr.binary, instr.mnemonic)}</span>
               </li>
             ))}
           </ul>

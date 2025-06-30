@@ -9,9 +9,6 @@ Este projeto é um simulador interativo para um subconjunto da arquitetura MIPS 
 
 O simulador foi projetado com base no datapath clássico de ciclo único, implementando a lógica para decodificar e executar instruções do tipo R e do tipo I.
 
-
-*(Você pode substituir esta imagem por uma captura de tela real do seu simulador)*
-
 ## Funcionalidades
 
 *   **Editor de Código Assembly:** Escreva seu código MIPS com suporte a comentários e seções `.data` e `.text`.

@@ -87,7 +87,7 @@ O simulador suporta o seguinte subconjunto de instruções MIPS:
 
 ## Exemplos de Código
 
-Copie e cole um dos exemplos abaixo no editor do simulador para testar suas funcionalidades.
+Copie e cole um dos exemplos abaixo no editor do simulador para testar.
 
 ### Exemplo 1: Olá, Mundo! (String e Inteiro)
 
@@ -113,6 +113,8 @@ main:
   li $v0, 10
   syscall
 
+  ```
+
 
   ```mips
 
@@ -130,10 +132,6 @@ main:
 
   slti $t2, $s0, 51   # t2 = (55 < 51) ? 1 : 0.  t2 será 0.
 
-  # A lógica aqui seria: beq $t2, $zero, maior
-  # Como não temos branches, o fluxo seguirá sequencialmente.
-  # Para um teste real, você pode alterar o valor em slti para ver a mudança em $t2.
-  
   la $a0, msg_maior
   li $v0, 4
   syscall
@@ -141,7 +139,7 @@ main:
   # Finaliza o programa
   li $v0, 10
   syscall
-
+```
 
   ```mips
 
@@ -178,3 +176,4 @@ main:
   # Fim
   li $v0, 10
   syscall
+  ```

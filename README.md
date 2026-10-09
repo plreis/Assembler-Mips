@@ -202,14 +202,6 @@ A aplicação estará disponível em `http://localhost:3000`.
 npm run build   # Gera os arquivos estáticos em ./out
 ```
 
-## Deploy (GitHub Pages)
-
-O deploy é feito automaticamente via **GitHub Actions** a cada push na branch `main`. O workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) realiza o build com `NODE_ENV=production` e publica a pasta `out/` no GitHub Pages.
-
-Para ativar pela primeira vez:
-1. Vá em **Settings → Pages** do repositório
-2. Em **Source**, selecione **GitHub Actions**
-3. Faça um push — o site será publicado em `https://plreis.github.io/Assembler-Mips/`
 
 ## Stack
 
